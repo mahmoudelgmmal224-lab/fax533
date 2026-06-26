@@ -227,6 +227,15 @@
         <button class="btn btn-light" id="btnImportBackupBtn">استيراد</button>
         <input type="file" id="importFileInput" accept=".json" style="display:none;" />
       </div>
+      <div class="backup-card">
+        <div class="backup-icon">🖥️</div>
+        <div class="backup-info">
+          <div class="backup-title">استيراد من الكمبيوتر مباشرة</div>
+          <div class="backup-desc">اختر ملف fax_system.db من مجلد النسخة الاحتياطية للكمبيوتر — بدون أي تعديل على الكمبيوتر</div>
+        </div>
+        <button class="btn btn-gold" id="btnImportDbBtn">استيراد .db</button>
+        <input type="file" id="importDbInput" accept=".db" style="display:none;" />
+      </div>
     </div>
   </div>
 
@@ -442,6 +451,8 @@
 <!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script src="sqlite-importer.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
 </body>

@@ -675,6 +675,33 @@
     e.target.value = '';
   });
 
+  // استيراد مباشر من ملف .db الكمبيوتر
+  $('#btnImportDbBtn').addEventListener('click', () => {
+    $('#importDbInput').click();
+  });
+
+  $('#importDbInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    confirm(
+      'استيراد من الكمبيوتر',
+      'سيتم قراءة ملف fax_system.db واستيراد كل البيانات (بدون مرفقات). سيتم استبدال البيانات الحالية على الهاتف. هل تريد المتابعة؟',
+      async () => {
+        try {
+          toast('جاري قراءة قاعدة البيانات...', 'info');
+          const data = await SQLiteImporter.importFromDbFile(file);
+          await FaxDB.importBackup(JSON.stringify(data));
+          toast(`✓ تم الاستيراد — ${data.incoming.length} وارد و${data.outgoing.length} صادر`);
+          loadDashboard();
+        } catch(err) {
+          console.error(err);
+          toast('فشل القراءة — تأكد إن الملف هو fax_system.db الصحيح', 'error');
+        }
+      }
+    );
+    e.target.value = '';
+  });
+
   // ============================================================
   // Service Worker
   // ============================================================
