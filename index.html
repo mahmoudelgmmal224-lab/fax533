@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#0c1726" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="فاكسات 533" />
+<title>نظام فاكسات اللواء الجوي 533</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- شريط العنوان -->
+<div class="top-bar">
+  <div class="top-bar-logo-placeholder">📠</div>
+  <div class="top-bar-text">
+    <div class="top-bar-title">نظام فاكسات اللواء الجوي 533</div>
+    <div class="top-bar-sub" id="topBarSub">إصدار محلي - بدون إنترنت</div>
+  </div>
+</div>
+
+<!-- ===================== لوحة التحكم ===================== -->
+<div class="page active" id="page-dashboard">
+  <div class="stats-group-title">حركة اليوم</div>
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-icon">📥</div>
+      <div>
+        <div class="stat-value" id="statIncomingToday">0</div>
+        <div class="stat-label">وارد اليوم</div>
+      </div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">📤</div>
+      <div>
+        <div class="stat-value" id="statOutgoingToday">0</div>
+        <div class="stat-label">صادر اليوم</div>
+      </div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-icon">🗄️</div>
+      <div>
+        <div class="stat-value" id="statArchived">0</div>
+        <div class="stat-label">مؤرشف</div>
+      </div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-icon">⏳</div>
+      <div>
+        <div class="stat-value" id="statOpen">0</div>
+        <div class="stat-label">مفتوحة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-group-title">الإجمالي الكلي</div>
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-icon">📋</div>
+      <div>
+        <div class="stat-value" id="statIncomingTotal">0</div>
+        <div class="stat-label">إجمالي الوارد</div>
+      </div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">📋</div>
+      <div>
+        <div class="stat-value" id="statOutgoingTotal">0</div>
+        <div class="stat-label">إجمالي الصادر</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="card-header">آخر العمليات</div>
+    <div class="card-body" id="recentActivityList">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">لا توجد عمليات بعد</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== الفاكس الوارد ===================== -->
+<div class="page" id="page-incoming">
+  <div class="page-title">الفاكس الوارد</div>
+
+  <div class="filter-pills" id="incomingFilters">
+    <div class="pill active" data-status="">الكل</div>
+    <div class="pill" data-status="جديد">جديد</div>
+    <div class="pill" data-status="قيد المعالجة">قيد المعالجة</div>
+    <div class="pill" data-status="تم الإنجاز">تم الإنجاز</div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="form-control" id="incomingSearch" placeholder="بحث سريع..." />
+  </div>
+
+  <div class="card">
+    <div class="card-body" id="incomingList">
+      <div class="empty-state">
+        <div class="empty-icon">📥</div>
+        <div class="empty-text">لا توجد فاكسات واردة</div>
+        <div class="empty-sub">اضغط + لإضافة فاكس وارد جديد</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== الفاكس الصادر ===================== -->
+<div class="page" id="page-outgoing">
+  <div class="page-title">الفاكس الصادر</div>
+
+  <div class="filter-pills" id="outgoingFilters">
+    <div class="pill active" data-status="">الكل</div>
+    <div class="pill" data-status="قيد الإرسال">قيد الإرسال</div>
+    <div class="pill" data-status="تم الإرسال">تم الإرسال</div>
+    <div class="pill" data-status="فشل الإرسال">فشل الإرسال</div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="form-control" id="outgoingSearch" placeholder="بحث سريع..." />
+  </div>
+
+  <div class="card">
+    <div class="card-body" id="outgoingList">
+      <div class="empty-state">
+        <div class="empty-icon">📤</div>
+        <div class="empty-text">لا توجد فاكسات صادرة</div>
+        <div class="empty-sub">اضغط + لإنشاء فاكس صادر جديد</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== البحث ===================== -->
+<div class="page" id="page-search">
+  <div class="page-title">البحث المتقدم</div>
+
+  <div class="card">
+    <div class="card-body" style="padding:14px;">
+      <div class="form-row">
+        <label class="form-label">نوع الفاكس</label>
+        <select class="form-control" id="searchType">
+          <option value="incoming">وارد</option>
+          <option value="outgoing">صادر</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">رقم الفاكس</label>
+        <input type="text" class="form-control" id="searchFaxNum" placeholder="رقم الفاكس" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">اسم الجهة</label>
+        <input type="text" class="form-control" id="searchEntity" placeholder="اسم الجهة" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">من تاريخ</label>
+        <input type="date" class="form-control" id="searchDateFrom" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">إلى تاريخ</label>
+        <input type="date" class="form-control" id="searchDateTo" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">الحالة</label>
+        <select class="form-control" id="searchStatus">
+          <option value="">الكل</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full" id="btnSearch">🔍 بحث</button>
+    </div>
+  </div>
+
+  <div class="card" id="searchResultsCard" style="display:none;">
+    <div class="card-header">نتائج البحث</div>
+    <div class="card-body" id="searchResults"></div>
+  </div>
+</div>
+
+<!-- ===================== المزيد ===================== -->
+<div class="page" id="page-more">
+  <div class="page-title">المزيد</div>
+
+  <div class="card" style="margin-bottom:10px;">
+    <div class="card-body">
+      <div class="fax-item" id="btnGoArchive">
+        <div class="fax-item-icon">🗄️</div>
+        <div class="fax-item-content">
+          <div class="fax-item-entity">الأرشيف</div>
+          <div class="fax-item-subject">الفاكسات المؤرشفة</div>
+        </div>
+        <div style="color:#bbb;">‹</div>
+      </div>
+      <div class="fax-item" id="btnGoActivity">
+        <div class="fax-item-icon">📜</div>
+        <div class="fax-item-content">
+          <div class="fax-item-entity">سجل النشاط</div>
+          <div class="fax-item-subject">كل العمليات المسجلة</div>
+        </div>
+        <div style="color:#bbb;">‹</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="backup-card">
+        <div class="backup-icon">💾</div>
+        <div class="backup-info">
+          <div class="backup-title">تصدير نسخة احتياطية</div>
+          <div class="backup-desc">حفظ كل البيانات كملف JSON</div>
+        </div>
+        <button class="btn btn-primary" id="btnExportBackup">تصدير</button>
+      </div>
+      <div class="backup-card">
+        <div class="backup-icon">📥</div>
+        <div class="backup-info">
+          <div class="backup-title">استيراد نسخة احتياطية</div>
+          <div class="backup-desc">استعادة البيانات من ملف JSON</div>
+        </div>
+        <button class="btn btn-light" id="btnImportBackupBtn">استيراد</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">
+    تطوير <strong>Mahmoud Sabry</strong><br/>
+    نظام فاكسات اللواء الجوي 533
+  </div>
+</div>
+
+<!-- ===================== الأرشيف ===================== -->
+<div class="page" id="page-archive">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+    <button class="btn btn-light" id="btnBackFromArchive" style="padding:8px 14px;">→</button>
+    <div class="page-title" style="margin:0;">الأرشيف</div>
+  </div>
+
+  <div class="filter-pills">
+    <div class="pill active" id="archiveTabIn" data-type="incoming">الوارد المؤرشف</div>
+    <div class="pill" id="archiveTabOut" data-type="outgoing">الصادر المؤرشف</div>
+  </div>
+
+  <div class="card">
+    <div class="card-body" id="archiveList">
+      <div class="empty-state">
+        <div class="empty-icon">🗄️</div>
+        <div class="empty-text">لا توجد فاكسات مؤرشفة</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== سجل النشاط ===================== -->
+<div class="page" id="page-activity">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+    <button class="btn btn-light" id="btnBackFromActivity" style="padding:8px 14px;">→</button>
+    <div class="page-title" style="margin:0;">سجل النشاط</div>
+  </div>
+  <div class="card">
+    <div class="card-body" id="activityList">
+      <div class="empty-state">
+        <div class="empty-icon">📜</div>
+        <div class="empty-text">لا توجد عمليات مسجلة</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- زر الإضافة العائم -->
+<button class="fab" id="fabBtn">+</button>
+
+<!-- ===================== شريط التنقل السفلي ===================== -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-page="dashboard">
+    <span class="nav-icon">📊</span>
+    <span>الرئيسية</span>
+  </button>
+  <button class="nav-btn" data-page="incoming">
+    <span class="nav-icon">📥</span>
+    <span>الوارد</span>
+  </button>
+  <button class="nav-btn" data-page="outgoing">
+    <span class="nav-icon">📤</span>
+    <span>الصادر</span>
+  </button>
+  <button class="nav-btn" data-page="search">
+    <span class="nav-icon">🔍</span>
+    <span>بحث</span>
+  </button>
+  <button class="nav-btn" data-page="more">
+    <span class="nav-icon">☰</span>
+    <span>المزيد</span>
+  </button>
+</nav>
+
+<!-- =================== Sheet: إضافة/تعديل وارد =================== -->
+<div class="sheet-overlay" id="sheetIncoming">
+  <div class="sheet">
+    <div class="sheet-header">
+      <span class="sheet-title" id="sheetIncomingTitle">فاكس وارد جديد</span>
+      <button class="sheet-close" data-close="sheetIncoming">×</button>
+    </div>
+    <div class="sheet-body">
+      <input type="hidden" id="incId" />
+      <div class="form-row">
+        <label class="form-label">رقم الفاكس الوارد *</label>
+        <input type="text" class="form-control" id="incFaxNum" placeholder="مثال: IN-2026-001" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">تاريخ الاستلام *</label>
+        <input type="date" class="form-control" id="incDate" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">وقت الاستلام *</label>
+        <input type="time" class="form-control" id="incTime" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">الجهة المرسلة *</label>
+        <input type="text" class="form-control" id="incSender" placeholder="اسم الجهة المرسلة" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">الموضوع</label>
+        <input type="text" class="form-control" id="incSubject" placeholder="موضوع الفاكس" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">القسم المحول إليه</label>
+        <input type="text" class="form-control" id="incDept" placeholder="القسم" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">درجة الأهمية</label>
+        <select class="form-control" id="incPriority">
+          <option value="عادي">عادي</option>
+          <option value="عاجل">عاجل</option>
+          <option value="سري">سري</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">الحالة</label>
+        <select class="form-control" id="incStatus">
+          <option value="جديد">جديد</option>
+          <option value="قيد المعالجة">قيد المعالجة</option>
+          <option value="تم الإنجاز">تم الإنجاز</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">ملاحظات</label>
+        <textarea class="form-control" id="incNotes" placeholder="ملاحظات إضافية..."></textarea>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn btn-light" data-close="sheetIncoming">إلغاء</button>
+      <button class="btn btn-primary" id="btnSaveIncoming">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== Sheet: إضافة/تعديل صادر =================== -->
+<div class="sheet-overlay" id="sheetOutgoing">
+  <div class="sheet">
+    <div class="sheet-header">
+      <span class="sheet-title" id="sheetOutgoingTitle">فاكس صادر جديد</span>
+      <button class="sheet-close" data-close="sheetOutgoing">×</button>
+    </div>
+    <div class="sheet-body">
+      <input type="hidden" id="outId" />
+      <div class="form-row">
+        <label class="form-label">رقم الصادر *</label>
+        <input type="text" class="form-control" id="outFaxNum" placeholder="اكتب رقم الصادر" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">تاريخ الإرسال *</label>
+        <input type="date" class="form-control" id="outDate" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">وقت الإرسال *</label>
+        <input type="time" class="form-control" id="outTime" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">الجهة المرسل إليها *</label>
+        <input type="text" class="form-control" id="outRecipient" placeholder="اسم الجهة" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">الموضوع *</label>
+        <input type="text" class="form-control" id="outSubject" placeholder="موضوع الفاكس" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">القسم</label>
+        <input type="text" class="form-control" id="outDept" placeholder="القسم المرسل" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">حالة الإرسال</label>
+        <select class="form-control" id="outStatus">
+          <option value="قيد الإرسال">قيد الإرسال</option>
+          <option value="تم الإرسال">تم الإرسال</option>
+          <option value="فشل الإرسال">فشل الإرسال</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">ملاحظات</label>
+        <textarea class="form-control" id="outNotes" placeholder="ملاحظات إضافية..."></textarea>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn btn-light" data-close="sheetOutgoing">إلغاء</button>
+      <button class="btn btn-primary" id="btnSaveOutgoing">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== Sheet: تفاصيل الفاكس =================== -->
+<div class="sheet-overlay" id="sheetDetail">
+  <div class="sheet">
+    <div class="sheet-header">
+      <span class="sheet-title" id="sheetDetailTitle">تفاصيل الفاكس</span>
+      <button class="sheet-close" data-close="sheetDetail">×</button>
+    </div>
+    <div class="sheet-body" id="sheetDetailBody"></div>
+    <div class="action-bar" id="sheetDetailActions"></div>
+  </div>
+</div>
+
+<!-- تأكيد -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">تأكيد</div>
+    <div class="confirm-msg" id="confirmMsg">هل أنت متأكد؟</div>
+    <div class="confirm-btns">
+      <button class="btn btn-light" id="btnConfirmNo">إلغاء</button>
+      <button class="btn btn-danger" id="btnConfirmYes">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
