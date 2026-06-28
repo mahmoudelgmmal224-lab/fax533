@@ -1,5 +1,5 @@
 // sw.js - Service Worker لنظام فاكسات اللواء الجوي 533
-const CACHE_NAME = 'fax533-v3';
+const CACHE_NAME = 'fax533-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './app.js',
   './db.js',
   './sqlite-importer.js',
+  './excel-importer.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'

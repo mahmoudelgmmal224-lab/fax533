@@ -300,6 +300,36 @@ async function getDashboardStats() {
 }
 
 // ============ النسخ الاحتياطي ============
+// ============ استيراد من Excel ============
+async function importFromExcel(rows) {
+  const d = await openDB();
+
+  // جلب أرقام الفاكسات الموجودة لتخطي المكررات
+  const existing = await getAllIncoming({});
+  const existingNums = new Set(existing.map(r => String(r.fax_number).trim()));
+
+  let added = 0;
+  let skipped = 0;
+
+  for (const row of rows) {
+    const num = String(row.fax_number).trim();
+    if (!num || existingNums.has(num)) {
+      skipped++;
+      continue;
+    }
+    const tx = d.transaction('incoming', 'readwrite');
+    tx.objectStore('incoming').add(row);
+    await new Promise((res, rej) => {
+      tx.oncomplete = () => { existingNums.add(num); res(); };
+      tx.onerror = (e) => rej(e.target.error);
+    });
+    added++;
+  }
+
+  await logActivity('استيراد Excel', 'وارد', null, `تم استيراد ${added} فاكس من Excel (تخطي ${skipped} مكرر)`);
+  return { added, skipped, total: rows.length };
+}
+
 async function exportBackup() {
   const allIn = await getAllIncoming({});
   const allOut = await getAllOutgoing({});
@@ -348,5 +378,5 @@ window.FaxDB = {
   openDB, todayStr, nowStr,
   addIncoming, updateIncoming, archiveIncoming, deleteIncoming, getAllIncoming, getIncomingById,
   addOutgoing, updateOutgoing, archiveOutgoing, deleteOutgoing, getAllOutgoing, getOutgoingById,
-  getNextOutgoingNumber, getActivityLog, getDashboardStats, exportBackup, importBackup
+  getNextOutgoingNumber, getActivityLog, getDashboardStats, exportBackup, importBackup, importFromExcel
 };

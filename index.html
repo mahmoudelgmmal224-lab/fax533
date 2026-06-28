@@ -140,10 +140,31 @@
 
 <!-- ===================== البحث ===================== -->
 <div class="page" id="page-search">
-  <div class="page-title">البحث المتقدم</div>
+  <div class="page-title">البحث</div>
 
-  <div class="card">
+  <!-- بحث سريع بالكلام -->
+  <div class="card" style="margin-bottom:10px;">
     <div class="card-body" style="padding:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <label class="form-label">🔍 بحث سريع بالكلام</label>
+        <input type="text" class="form-control" id="searchKeyword"
+          placeholder="اكتب أي كلمة — موضوع، جهة، ملاحظات، رقم..." />
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <div class="pill active" id="kwTypeAll" data-type="all">الكل</div>
+        <div class="pill" id="kwTypeIn" data-type="incoming">وارد فقط</div>
+        <div class="pill" id="kwTypeOut" data-type="outgoing">صادر فقط</div>
+      </div>
+      <button class="btn btn-primary btn-full" id="btnKeywordSearch" style="margin-top:10px;">بحث</button>
+    </div>
+  </div>
+
+  <!-- بحث متقدم -->
+  <div class="card">
+    <div class="card-header" id="toggleAdvanced" style="cursor:pointer;">
+      ⚙️ بحث متقدم (تاريخ، حالة، رقم)
+    </div>
+    <div class="card-body" id="advancedSearchBody" style="display:none;padding:14px;">
       <div class="form-row">
         <label class="form-label">نوع الفاكس</label>
         <select class="form-control" id="searchType">
@@ -173,12 +194,12 @@
           <option value="">الكل</option>
         </select>
       </div>
-      <button class="btn btn-primary btn-full" id="btnSearch">🔍 بحث</button>
+      <button class="btn btn-primary btn-full" id="btnSearch">🔍 بحث متقدم</button>
     </div>
   </div>
 
-  <div class="card" id="searchResultsCard" style="display:none;">
-    <div class="card-header">نتائج البحث</div>
+  <div class="card" id="searchResultsCard" style="display:none;margin-top:10px;">
+    <div class="card-header" id="searchResultsTitle">نتائج البحث</div>
     <div class="card-body" id="searchResults"></div>
   </div>
 </div>
@@ -226,6 +247,15 @@
         </div>
         <button class="btn btn-light" id="btnImportBackupBtn">استيراد</button>
         <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+      </div>
+      <div class="backup-card">
+        <div class="backup-icon">📊</div>
+        <div class="backup-info">
+          <div class="backup-title">استيراد من ملف Excel</div>
+          <div class="backup-desc">استيراد بيانات الفاكسات الواردة من ملف بيان الفاكسات مباشرة</div>
+        </div>
+        <button class="btn btn-gold" id="btnImportExcelBtn">استيراد Excel</button>
+        <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;" />
       </div>
       <div class="backup-card">
         <div class="backup-icon">🖥️</div>
@@ -452,7 +482,9 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="sqlite-importer.js"></script>
+<script src="excel-importer.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
 </body>

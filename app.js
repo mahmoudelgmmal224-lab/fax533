@@ -492,6 +492,103 @@
     sel.innerHTML = opts.map(o => `<option value="${o}">${o||'الكل'}</option>`).join('');
   });
 
+  // ============ البحث السريع بالكلام ============
+  let kwSearchType = 'all';
+
+  $$('#kwTypeAll, #kwTypeIn, #kwTypeOut').forEach(pill => {
+    pill.addEventListener('click', () => {
+      $$('#kwTypeAll, #kwTypeIn, #kwTypeOut').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      kwSearchType = pill.dataset.type;
+    });
+  });
+
+  // إظهار/إخفاء البحث المتقدم
+  $('#toggleAdvanced').addEventListener('click', () => {
+    const body = $('#advancedSearchBody');
+    body.style.display = body.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // البحث بالكلام - يبحث في الموضوع والجهة والملاحظات ورقم الفاكس
+  $('#btnKeywordSearch').addEventListener('click', async () => {
+    const kw = $('#searchKeyword').value.trim().toLowerCase();
+    if (!kw) { toast('اكتب كلمة للبحث', 'info'); return; }
+
+    const card = $('#searchResultsCard');
+    const results = $('#searchResults');
+    const title = $('#searchResultsTitle');
+
+    let allRows = [];
+
+    // البحث في الوارد
+    if (kwSearchType !== 'outgoing') {
+      const rows = await FaxDB.getAllIncoming({});
+      const matched = rows.filter(r =>
+        (r.fax_number||'').toLowerCase().includes(kw) ||
+        (r.subject||'').toLowerCase().includes(kw) ||
+        (r.sender_entity||'').toLowerCase().includes(kw) ||
+        (r.notes||'').toLowerCase().includes(kw) ||
+        (r.department||'').toLowerCase().includes(kw)
+      );
+      matched.forEach(r => allRows.push({ ...r, _type: 'incoming' }));
+    }
+
+    // البحث في الصادر
+    if (kwSearchType !== 'incoming') {
+      const rows = await FaxDB.getAllOutgoing({});
+      const matched = rows.filter(r =>
+        (r.fax_number||'').toLowerCase().includes(kw) ||
+        (r.subject||'').toLowerCase().includes(kw) ||
+        (r.recipient_entity||'').toLowerCase().includes(kw) ||
+        (r.notes||'').toLowerCase().includes(kw) ||
+        (r.department||'').toLowerCase().includes(kw)
+      );
+      matched.forEach(r => allRows.push({ ...r, _type: 'outgoing' }));
+    }
+
+    // ترتيب بالتاريخ الأحدث
+    allRows.sort((a, b) => b.id - a.id);
+
+    card.style.display = '';
+    title.textContent = `نتائج البحث عن "${kw}" — ${allRows.length} نتيجة`;
+
+    if (!allRows.length) {
+      results.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">لا توجد نتائج لـ "${kw}"</div><div class="empty-sub">جرّب كلمة مختلفة</div></div>`;
+      return;
+    }
+
+    // تظليل الكلمة في النتائج
+    function highlight(text, kw) {
+      if (!text || !kw) return escHtml(text || '');
+      const escaped = escHtml(text);
+      const escapedKw = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return escaped.replace(new RegExp(escapedKw, 'gi'), m => `<mark style="background:#fde68a;border-radius:3px;padding:0 2px;">${m}</mark>`);
+    }
+
+    results.innerHTML = allRows.map(r => {
+      const isIn = r._type === 'incoming';
+      return `
+        <div class="fax-item" data-action="view-${isIn?'incoming':'outgoing'}" data-id="${r.id}">
+          <div class="fax-item-icon">${isIn?'📥':'📤'}</div>
+          <div class="fax-item-content">
+            <div class="fax-item-number">${highlight(r.fax_number, kw)}</div>
+            <div class="fax-item-entity">${highlight(isIn ? r.sender_entity : r.recipient_entity, kw)}</div>
+            <div class="fax-item-subject">${highlight(r.subject||'-', kw)}</div>
+            ${r.notes ? `<div class="fax-item-subject" style="color:#6b5c3e;">${highlight(r.notes, kw)}</div>` : ''}
+          </div>
+          <div class="fax-item-meta">
+            <div class="fax-item-date">${escHtml(isIn ? r.received_date : r.sent_date)}</div>
+            ${isIn ? incomingBadge(r.status) : outgoingBadge(r.send_status)}
+          </div>
+        </div>`;
+    }).join('');
+  });
+
+  // البحث بضغط Enter
+  $('#searchKeyword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') $('#btnKeywordSearch').click();
+  });
+
   $('#btnSearch').addEventListener('click', async () => {
     const type = $('#searchType').value;
     const faxNum = $('#searchFaxNum').value.trim();
@@ -696,6 +793,33 @@
         } catch(err) {
           console.error(err);
           toast('فشل القراءة — تأكد إن الملف هو fax_system.db الصحيح', 'error');
+        }
+      }
+    );
+    e.target.value = '';
+  });
+
+  // ============ استيراد Excel ============
+  $('#btnImportExcelBtn').addEventListener('click', () => {
+    $('#importExcelInput').click();
+  });
+
+  $('#importExcelInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    confirm(
+      'استيراد من Excel',
+      'سيتم قراءة ملف Excel وإضافة الفاكسات الواردة. الأرقام المكررة ستُتخطى تلقائياً. هل تريد المتابعة؟',
+      async () => {
+        try {
+          toast('جاري قراءة ملف Excel...', 'info');
+          const rows = await ExcelImporter.importFromExcelFile(file);
+          const result = await FaxDB.importFromExcel(rows);
+          toast(`✓ تم — أُضيف ${result.added} فاكس${result.skipped > 0 ? ` (تخطي ${result.skipped} مكرر)` : ''}`);
+          loadDashboard();
+        } catch(err) {
+          console.error(err);
+          toast('فشل الاستيراد — تأكد من صحة ملف Excel', 'error');
         }
       }
     );
