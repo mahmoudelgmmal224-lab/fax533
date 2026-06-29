@@ -759,11 +759,11 @@
   $('#importFileInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    confirm('استيراد نسخة احتياطية', 'سيتم استبدال جميع البيانات الحالية ببيانات النسخة المختارة. هل تريد المتابعة؟', async () => {
+    confirm('استيراد كامل (JSON)', 'سيتم مسح كل البيانات الحالية واستبدالها بالنسخة المختارة. هل أنت متأكد؟', async () => {
       try {
         const text = await file.text();
         await FaxDB.importBackup(text);
-        toast('تم استيراد النسخة الاحتياطية بنجاح');
+        toast('تم الاستيراد الكامل بنجاح');
         loadDashboard();
       } catch(e) {
         toast('فشل الاستيراد - تأكد من صحة الملف', 'error');
@@ -772,7 +772,33 @@
     e.target.value = '';
   });
 
-  // استيراد مباشر من ملف .db الكمبيوتر
+  // دمج JSON — يضيف الجديد فقط بدون مسح
+  $('#btnMergeBackupBtn').addEventListener('click', () => {
+    $('#mergeFileInput').click();
+  });
+
+  $('#mergeFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    confirm(
+      'دمج نسخة JSON ✨',
+      'سيتم إضافة الفاكسات الغير موجودة على الهاتف فقط. البيانات الموجودة لن تُمسح ولن تتغير.',
+      async () => {
+        try {
+          toast('جاري الدمج...', 'info');
+          const text = await file.text();
+          const result = await FaxDB.mergeBackup(text);
+          toast(`✓ تم الدمج — أُضيف ${result.addedIn} وارد و${result.addedOut} صادر (تخطي ${result.skippedIn + result.skippedOut} موجود)`);
+          loadDashboard();
+        } catch(err) {
+          toast('فشل الدمج - تأكد من صحة الملف', 'error');
+        }
+      }
+    );
+    e.target.value = '';
+  });
+
+  // استيراد كامل من ملف .db الكمبيوتر
   $('#btnImportDbBtn').addEventListener('click', () => {
     $('#importDbInput').click();
   });
@@ -781,18 +807,44 @@
     const file = e.target.files[0];
     if (!file) return;
     confirm(
-      'استيراد من الكمبيوتر',
-      'سيتم قراءة ملف fax_system.db واستيراد كل البيانات (بدون مرفقات). سيتم استبدال البيانات الحالية على الهاتف. هل تريد المتابعة؟',
+      'استيراد كامل (.db)',
+      'سيتم مسح كل البيانات الحالية على الهاتف واستبدالها ببيانات الكمبيوتر. هل أنت متأكد؟',
       async () => {
         try {
           toast('جاري قراءة قاعدة البيانات...', 'info');
           const data = await SQLiteImporter.importFromDbFile(file);
           await FaxDB.importBackup(JSON.stringify(data));
-          toast(`✓ تم الاستيراد — ${data.incoming.length} وارد و${data.outgoing.length} صادر`);
+          toast(`✓ تم الاستيراد الكامل — ${data.incoming.length} وارد و${data.outgoing.length} صادر`);
+          loadDashboard();
+        } catch(err) {
+          toast('فشل القراءة — تأكد إن الملف هو fax_system.db الصحيح', 'error');
+        }
+      }
+    );
+    e.target.value = '';
+  });
+
+  // دمج .db — يضيف الجديد فقط بدون مسح
+  $('#btnMergeDbBtn').addEventListener('click', () => {
+    $('#mergeDbInput').click();
+  });
+
+  $('#mergeDbInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    confirm(
+      'دمج من الكمبيوتر ✨',
+      'سيتم إضافة الفاكسات الغير موجودة على الهاتف فقط من ملف الكمبيوتر. البيانات الموجودة لن تُمسح ولن تتغير.',
+      async () => {
+        try {
+          toast('جاري قراءة وتحليل البيانات...', 'info');
+          const data = await SQLiteImporter.importFromDbFile(file);
+          const result = await FaxDB.mergeBackup(JSON.stringify(data));
+          toast(`✓ تم الدمج — أُضيف ${result.addedIn} وارد و${result.addedOut} صادر (تخطي ${result.skippedIn + result.skippedOut} موجود)`);
           loadDashboard();
         } catch(err) {
           console.error(err);
-          toast('فشل القراءة — تأكد إن الملف هو fax_system.db الصحيح', 'error');
+          toast('فشل الدمج — تأكد إن الملف هو fax_system.db الصحيح', 'error');
         }
       }
     );
@@ -836,11 +888,201 @@
   }
 
   // ============================================================
+  // نظام الأمان - الرقم السري
+  // ============================================================
+  let pinBuffer = '';
+
+  function updateDots(count, type = 'normal') {
+    for (let i = 0; i < 4; i++) {
+      const dot = $(`#dot${i}`);
+      dot.className = 'pin-dot';
+      if (i < count) dot.classList.add(type === 'error' ? 'error' : 'filled');
+    }
+  }
+
+  function shakeError(msg) {
+    $('#pinError').textContent = msg;
+    updateDots(4, 'error');
+    setTimeout(() => {
+      pinBuffer = '';
+      updateDots(0);
+      $('#pinError').textContent = '';
+    }, 1000);
+  }
+
+  async function handlePinInput(num) {
+    if (pinBuffer.length >= 4) return;
+    pinBuffer += num;
+    updateDots(pinBuffer.length);
+
+    if (pinBuffer.length === 4) {
+      const result = Security.check(pinBuffer);
+
+      if (result === 'normal') {
+        // دخول عادي
+        hideLockScreen();
+
+      } else if (result === 'duress') {
+        // رقم الطوارئ — حذف كل البيانات بصمت ثم فتح التطبيق فارغاً
+        await nukeBiData();
+        hideLockScreen();
+
+      } else {
+        // رقم خاطئ
+        shakeError('رقم سري خاطئ');
+      }
+    }
+  }
+
+  // حذف كل البيانات (رقم الطوارئ)
+  async function nukeBiData() {
+    try {
+      const d = await FaxDB.openDB();
+      await new Promise((res, rej) => {
+        const tx = d.transaction(['incoming', 'outgoing', 'activity'], 'readwrite');
+        tx.objectStore('incoming').clear();
+        tx.objectStore('outgoing').clear();
+        tx.objectStore('activity').clear();
+        tx.oncomplete = res;
+        tx.onerror = (e) => rej(e.target.error);
+      });
+    } catch(e) { /* صمت تام */ }
+  }
+
+  function showLockScreen() {
+    const ls = $('#lockScreen');
+    ls.style.display = 'flex';
+    pinBuffer = '';
+    updateDots(0);
+    $('#pinError').textContent = '';
+  }
+
+  function hideLockScreen() {
+    $('#lockScreen').style.display = 'none';
+    loadDashboard();
+  }
+
+  // أزرار لوحة الأرقام
+  $$('.pin-btn[data-num]').forEach(btn => {
+    btn.addEventListener('click', () => handlePinInput(btn.dataset.num));
+  });
+
+  $('#pinDel').addEventListener('click', () => {
+    if (pinBuffer.length > 0) {
+      pinBuffer = pinBuffer.slice(0, -1);
+      updateDots(pinBuffer.length);
+      $('#pinError').textContent = '';
+    }
+  });
+
+  // ============================================================
+  // شاشة الإعداد الأول
+  // ============================================================
+  function showSetupScreen() {
+    $('#setupScreen').style.display = 'flex';
+  }
+
+  function hideSetupScreen() {
+    $('#setupScreen').style.display = 'none';
+  }
+
+  $('#btnSetupSave').addEventListener('click', () => {
+    const n1 = $('#setupNormal1').value.trim();
+    const n2 = $('#setupNormal2').value.trim();
+    const d1 = $('#setupDuress1').value.trim();
+    const d2 = $('#setupDuress2').value.trim();
+    const err = $('#setupError');
+
+    if (n1.length !== 4 || !/^\d{4}$/.test(n1)) {
+      err.textContent = 'الرقم السري يجب أن يكون 4 أرقام';
+      return;
+    }
+    if (n1 !== n2) {
+      err.textContent = 'الرقم السري غير متطابق';
+      return;
+    }
+    if (d1.length !== 4 || !/^\d{4}$/.test(d1)) {
+      err.textContent = 'رقم الطوارئ يجب أن يكون 4 أرقام';
+      return;
+    }
+    if (d1 !== d2) {
+      err.textContent = 'رقم الطوارئ غير متطابق';
+      return;
+    }
+    if (n1 === d1) {
+      err.textContent = 'الرقم السري ورقم الطوارئ يجب أن يكونا مختلفين';
+      return;
+    }
+
+    Security.saveSettings(n1, d1);
+    hideSetupScreen();
+    showLockScreen();
+  });
+
+  // ============================================================
+  // تغيير الرقم السري
+  // ============================================================
+  $('#btnChangePin').addEventListener('click', () => {
+    $('#changePinOld').value = '';
+    $('#changePinNew1').value = '';
+    $('#changePinNew2').value = '';
+    $('#changePinDuress1').value = '';
+    $('#changePinDuress2').value = '';
+    $('#changePinError').textContent = '';
+    openSheet('sheetChangePin');
+  });
+
+  $('#btnSaveChangePin').addEventListener('click', () => {
+    const old = $('#changePinOld').value.trim();
+    const n1 = $('#changePinNew1').value.trim();
+    const n2 = $('#changePinNew2').value.trim();
+    const d1 = $('#changePinDuress1').value.trim();
+    const d2 = $('#changePinDuress2').value.trim();
+    const err = $('#changePinError');
+
+    if (Security.check(old) !== 'normal') {
+      err.textContent = 'الرقم السري الحالي غير صحيح';
+      return;
+    }
+    if (n1.length !== 4 || !/^\d{4}$/.test(n1)) {
+      err.textContent = 'الرقم الجديد يجب أن يكون 4 أرقام';
+      return;
+    }
+    if (n1 !== n2) {
+      err.textContent = 'الرقم الجديد غير متطابق';
+      return;
+    }
+    if (d1.length !== 4 || !/^\d{4}$/.test(d1)) {
+      err.textContent = 'رقم الطوارئ يجب أن يكون 4 أرقام';
+      return;
+    }
+    if (d1 !== d2) {
+      err.textContent = 'رقم الطوارئ غير متطابق';
+      return;
+    }
+    if (n1 === d1) {
+      err.textContent = 'الرقمان يجب أن يكونا مختلفين';
+      return;
+    }
+
+    Security.saveSettings(n1, d1);
+    closeSheet('sheetChangePin');
+    toast('تم تغيير الرقم السري بنجاح');
+  });
+
+  // ============================================================
   // تهيئة التطبيق
   // ============================================================
   async function init() {
     await FaxDB.openDB();
-    loadDashboard();
+
+    if (!Security.isConfigured()) {
+      // أول مرة — إعداد الرقم السري
+      showSetupScreen();
+    } else {
+      // عرض شاشة القفل
+      showLockScreen();
+    }
   }
 
   init().catch(console.error);

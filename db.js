@@ -373,10 +373,61 @@ async function importBackup(jsonStr) {
   return true;
 }
 
+// دمج نسخة احتياطية — يضيف الجديد فقط بدون مسح الموجود
+async function mergeBackup(jsonStr) {
+  const data = JSON.parse(jsonStr);
+
+  // جلب الأرقام الموجودة على الهاتف حالياً
+  const existingIn = await getAllIncoming({});
+  const existingOut = await getAllOutgoing({});
+  const existingInNums = new Set(existingIn.map(r => String(r.fax_number).trim()));
+  const existingOutNums = new Set(existingOut.map(r => String(r.fax_number).trim()));
+
+  const d = await openDB();
+  let addedIn = 0, skippedIn = 0, addedOut = 0, skippedOut = 0;
+
+  // إضافة الوارد الجديد فقط
+  for (const row of (data.incoming || [])) {
+    const num = String(row.fax_number || '').trim();
+    if (!num || existingInNums.has(num)) { skippedIn++; continue; }
+    const tx = d.transaction('incoming', 'readwrite');
+    // نزيل الـ id عشان IndexedDB يولّد id جديد ويتجنب التعارض
+    const { id, ...rowData } = row;
+    tx.objectStore('incoming').add({ ...rowData, updated_at: nowStr() });
+    await new Promise((res, rej) => {
+      tx.oncomplete = () => { existingInNums.add(num); addedIn++; res(); };
+      tx.onerror = (e) => rej(e.target.error);
+    });
+  }
+
+  // إضافة الصادر الجديد فقط
+  for (const row of (data.outgoing || [])) {
+    const num = String(row.fax_number || '').trim();
+    if (!num || existingOutNums.has(num)) { skippedOut++; continue; }
+    const tx = d.transaction('outgoing', 'readwrite');
+    const { id, ...rowData } = row;
+    tx.objectStore('outgoing').add({ ...rowData, updated_at: nowStr() });
+    await new Promise((res, rej) => {
+      tx.oncomplete = () => { existingOutNums.add(num); addedOut++; res(); };
+      tx.onerror = (e) => rej(e.target.error);
+    });
+  }
+
+  await logActivity(
+    'دمج نسخة',
+    'نظام',
+    null,
+    `دمج نسخة من الكمبيوتر — أُضيف ${addedIn} وارد و${addedOut} صادر (تخطي ${skippedIn + skippedOut} مكرر)`
+  );
+
+  return { addedIn, addedOut, skippedIn, skippedOut };
+}
+
+
 // تصدير الدوال
 window.FaxDB = {
   openDB, todayStr, nowStr,
   addIncoming, updateIncoming, archiveIncoming, deleteIncoming, getAllIncoming, getIncomingById,
   addOutgoing, updateOutgoing, archiveOutgoing, deleteOutgoing, getAllOutgoing, getOutgoingById,
-  getNextOutgoingNumber, getActivityLog, getDashboardStats, exportBackup, importBackup, importFromExcel
+  getNextOutgoingNumber, getActivityLog, getDashboardStats, exportBackup, importBackup, importFromExcel, mergeBackup
 };

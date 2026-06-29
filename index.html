@@ -14,6 +14,98 @@
 </head>
 <body>
 
+<!-- =================== شاشة الرقم السري =================== -->
+<div id="lockScreen" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:linear-gradient(160deg,#0c1726 0%,#16263d 60%,#1a0a0a 100%);
+  z-index:9999;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:30px 20px;
+">
+  <!-- الشعار والعنوان -->
+  <div style="text-align:center;margin-bottom:40px;">
+    <div style="font-size:56px;margin-bottom:12px;">📠</div>
+    <div style="color:#fff;font-size:18px;font-weight:800;margin-bottom:4px;">نظام فاكسات اللواء الجوي 533</div>
+    <div style="color:#8fa0b8;font-size:13px;" id="lockSubTitle">أدخل الرقم السري للدخول</div>
+  </div>
+
+  <!-- مؤشر الأرقام -->
+  <div style="display:flex;gap:14px;margin-bottom:36px;" id="pinDots">
+    <div class="pin-dot" id="dot0"></div>
+    <div class="pin-dot" id="dot1"></div>
+    <div class="pin-dot" id="dot2"></div>
+    <div class="pin-dot" id="dot3"></div>
+  </div>
+
+  <!-- رسالة خطأ -->
+  <div id="pinError" style="color:#f87171;font-size:13px;font-weight:600;min-height:20px;margin-bottom:20px;text-align:center;"></div>
+
+  <!-- لوحة الأرقام -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:280px;width:100%;">
+    <button class="pin-btn" data-num="1">1</button>
+    <button class="pin-btn" data-num="2">2</button>
+    <button class="pin-btn" data-num="3">3</button>
+    <button class="pin-btn" data-num="4">4</button>
+    <button class="pin-btn" data-num="5">5</button>
+    <button class="pin-btn" data-num="6">6</button>
+    <button class="pin-btn" data-num="7">7</button>
+    <button class="pin-btn" data-num="8">8</button>
+    <button class="pin-btn" data-num="9">9</button>
+    <div></div>
+    <button class="pin-btn" data-num="0">0</button>
+    <button class="pin-btn pin-del" id="pinDel">⌫</button>
+  </div>
+</div>
+
+<!-- =================== شاشة الإعداد الأول =================== -->
+<div id="setupScreen" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:linear-gradient(160deg,#0c1726 0%,#16263d 60%,#1a0a0a 100%);
+  z-index:9999;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:30px 20px;
+  overflow-y:auto;
+">
+  <div style="width:100%;max-width:320px;">
+    <div style="text-align:center;margin-bottom:30px;">
+      <div style="font-size:48px;margin-bottom:10px;">🔐</div>
+      <div style="color:#fff;font-size:17px;font-weight:800;margin-bottom:6px;">إعداد الرقم السري</div>
+      <div style="color:#8fa0b8;font-size:12px;">يتم هذا الإعداد مرة واحدة فقط</div>
+    </div>
+
+    <!-- خطوات الإعداد -->
+    <div id="setupStep1">
+      <div style="color:#c8922a;font-size:12px;font-weight:700;margin-bottom:8px;">الرقم السري العادي (للدخول)</div>
+      <input type="password" inputmode="numeric" maxlength="4" class="form-control" id="setupNormal1"
+        placeholder="أدخل 4 أرقام" style="text-align:center;font-size:22px;letter-spacing:8px;margin-bottom:10px;" />
+      <input type="password" inputmode="numeric" maxlength="4" class="form-control" id="setupNormal2"
+        placeholder="أعد الإدخال للتأكيد" style="text-align:center;font-size:22px;letter-spacing:8px;margin-bottom:20px;" />
+
+      <div style="color:#f87171;font-size:12px;font-weight:700;margin-bottom:8px;">رقم الطوارئ (يحذف البيانات)</div>
+      <div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:8px;padding:10px;margin-bottom:10px;">
+        <div style="color:#fca5a5;font-size:11px;line-height:1.6;">
+          ⚠️ هذا الرقم يبدو كرقم دخول عادي، لكن عند إدخاله يتم حذف جميع البيانات فوراً بشكل غير قابل للاسترجاع. احتفظ به في مكان آمن.
+        </div>
+      </div>
+      <input type="password" inputmode="numeric" maxlength="4" class="form-control" id="setupDuress1"
+        placeholder="أدخل رقم الطوارئ" style="text-align:center;font-size:22px;letter-spacing:8px;margin-bottom:10px;" />
+      <input type="password" inputmode="numeric" maxlength="4" class="form-control" id="setupDuress2"
+        placeholder="أعد الإدخال للتأكيد" style="text-align:center;font-size:22px;letter-spacing:8px;margin-bottom:20px;" />
+
+      <div id="setupError" style="color:#f87171;font-size:12px;text-align:center;min-height:18px;margin-bottom:12px;"></div>
+      <button class="btn btn-primary btn-full" id="btnSetupSave">حفظ وتأمين التطبيق</button>
+    </div>
+  </div>
+</div>
+
 <!-- شريط العنوان -->
 <div class="top-bar">
   <div class="top-bar-logo-placeholder">📠</div>
@@ -226,6 +318,14 @@
         </div>
         <div style="color:#bbb;">‹</div>
       </div>
+      <div class="fax-item" id="btnChangePin">
+        <div class="fax-item-icon">🔐</div>
+        <div class="fax-item-content">
+          <div class="fax-item-entity">تغيير الرقم السري</div>
+          <div class="fax-item-subject">تعديل رقم الدخول ورقم الطوارئ</div>
+        </div>
+        <div style="color:#bbb;">‹</div>
+      </div>
     </div>
   </div>
 
@@ -239,32 +339,45 @@
         </div>
         <button class="btn btn-primary" id="btnExportBackup">تصدير</button>
       </div>
+      <!-- استيراد JSON -->
       <div class="backup-card">
         <div class="backup-icon">📥</div>
         <div class="backup-info">
-          <div class="backup-title">استيراد نسخة احتياطية</div>
-          <div class="backup-desc">استعادة البيانات من ملف JSON</div>
+          <div class="backup-title">استيراد نسخة JSON</div>
+          <div class="backup-desc">استعادة كاملة (يمسح القديم) أو دمج (يضيف الجديد فقط)</div>
         </div>
-        <button class="btn btn-light" id="btnImportBackupBtn">استيراد</button>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button class="btn btn-light" id="btnImportBackupBtn" style="font-size:12px;padding:7px 10px;">استيراد كامل</button>
+          <button class="btn btn-primary" id="btnMergeBackupBtn" style="font-size:12px;padding:7px 10px;">دمج ✨</button>
+        </div>
         <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+        <input type="file" id="mergeFileInput" accept=".json" style="display:none;" />
       </div>
+
+      <!-- استيراد Excel -->
       <div class="backup-card">
         <div class="backup-icon">📊</div>
         <div class="backup-info">
           <div class="backup-title">استيراد من ملف Excel</div>
-          <div class="backup-desc">استيراد بيانات الفاكسات الواردة من ملف بيان الفاكسات مباشرة</div>
+          <div class="backup-desc">يضيف الجديد فقط — الأرقام المكررة تُتخطى تلقائياً</div>
         </div>
         <button class="btn btn-gold" id="btnImportExcelBtn">استيراد Excel</button>
         <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;" />
       </div>
+
+      <!-- استيراد .db من الكمبيوتر -->
       <div class="backup-card">
         <div class="backup-icon">🖥️</div>
         <div class="backup-info">
-          <div class="backup-title">استيراد من الكمبيوتر مباشرة</div>
-          <div class="backup-desc">اختر ملف fax_system.db من مجلد النسخة الاحتياطية للكمبيوتر — بدون أي تعديل على الكمبيوتر</div>
+          <div class="backup-title">استيراد من الكمبيوتر (.db)</div>
+          <div class="backup-desc">استعادة كاملة أو دمج الجديد فقط بدون مسح ما على الهاتف</div>
         </div>
-        <button class="btn btn-gold" id="btnImportDbBtn">استيراد .db</button>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button class="btn btn-light" id="btnImportDbBtn" style="font-size:12px;padding:7px 10px;">استيراد كامل</button>
+          <button class="btn btn-gold" id="btnMergeDbBtn" style="font-size:12px;padding:7px 10px;">دمج ✨</button>
+        </div>
         <input type="file" id="importDbInput" accept=".db" style="display:none;" />
+        <input type="file" id="mergeDbInput" accept=".db" style="display:none;" />
       </div>
     </div>
   </div>
@@ -466,6 +579,53 @@
   </div>
 </div>
 
+<!-- =================== Sheet: تغيير الرقم السري =================== -->
+<div class="sheet-overlay" id="sheetChangePin">
+  <div class="sheet">
+    <div class="sheet-header">
+      <span class="sheet-title">تغيير الرقم السري</span>
+      <button class="sheet-close" data-close="sheetChangePin">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="form-row">
+        <label class="form-label">الرقم السري الحالي</label>
+        <input type="password" inputmode="numeric" maxlength="4" class="form-control"
+          id="changePinOld" placeholder="أدخل الرقم الحالي"
+          style="text-align:center;font-size:22px;letter-spacing:8px;" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">الرقم السري الجديد</label>
+        <input type="password" inputmode="numeric" maxlength="4" class="form-control"
+          id="changePinNew1" placeholder="4 أرقام جديدة"
+          style="text-align:center;font-size:22px;letter-spacing:8px;" />
+      </div>
+      <div class="form-row">
+        <label class="form-label">تأكيد الرقم الجديد</label>
+        <input type="password" inputmode="numeric" maxlength="4" class="form-control"
+          id="changePinNew2" placeholder="أعد الإدخال"
+          style="text-align:center;font-size:22px;letter-spacing:8px;" />
+      </div>
+      <div class="form-row">
+        <label class="form-label" style="color:#f87171;">رقم الطوارئ الجديد</label>
+        <input type="password" inputmode="numeric" maxlength="4" class="form-control"
+          id="changePinDuress1" placeholder="رقم الطوارئ"
+          style="text-align:center;font-size:22px;letter-spacing:8px;" />
+      </div>
+      <div class="form-row">
+        <label class="form-label" style="color:#f87171;">تأكيد رقم الطوارئ</label>
+        <input type="password" inputmode="numeric" maxlength="4" class="form-control"
+          id="changePinDuress2" placeholder="أعد الإدخال"
+          style="text-align:center;font-size:22px;letter-spacing:8px;" />
+      </div>
+      <div id="changePinError" style="color:#f87171;font-size:12px;text-align:center;min-height:18px;"></div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn btn-light" data-close="sheetChangePin">إلغاء</button>
+      <button class="btn btn-primary" id="btnSaveChangePin">حفظ</button>
+    </div>
+  </div>
+</div>
+
 <!-- تأكيد -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
@@ -485,7 +645,51 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="sqlite-importer.js"></script>
 <script src="excel-importer.js"></script>
+<script src="security.js"></script>
 <script src="db.js"></script>
 <script src="app.js"></script>
+<style>
+.pin-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 2px solid #4a6080;
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pin-dot.filled {
+  background: #c8922a;
+  border-color: #c8922a;
+}
+.pin-dot.error {
+  background: #f87171;
+  border-color: #f87171;
+}
+.pin-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.08s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+.pin-btn:active {
+  background: rgba(200,146,42,0.35);
+  transform: scale(0.93);
+}
+.pin-del {
+  background: rgba(248,113,113,0.12);
+  border-color: rgba(248,113,113,0.2);
+  font-size: 20px;
+}
+</style>
 </body>
 </html>
